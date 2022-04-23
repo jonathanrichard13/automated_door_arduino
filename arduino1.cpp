@@ -40,7 +40,9 @@ unsigned long wrongPasswordStart = 0;
 String inputCode = ""; 
 char keypressed = '#';
 String passcode = "1234";
+int recv;
 
+const int masterAddress = 1;
 const int slaveAddress = 10;
 
 void setup()
@@ -48,13 +50,20 @@ void setup()
     Serial.begin(9600);
     lcd.begin(16, 2); 
     servo.attach(10, 500, 2500);
-    Wire.begin();
+    servo.write(0);
+    Wire.begin(1);
     Wire.onReceive(receiveEvent);
 }
 
 void receiveEvent(int something)
 {
-	Serial.println(Wire.read());
+	Serial.println("RECEIVED");
+    recv = Wire.read();
+    if (recv == 1){
+        servo.write(90);
+    } else {
+        servo.write(0);
+    }
 }
 
 void loop()
@@ -81,12 +90,14 @@ void loop()
             }
             break;
         case UNLOCKED:
-                Wire.beginTransmission(slaveAddress);
-                Wire.write(true);
-                Wire.endTransmission();
-                delay(2000);
-                inputCode = "";
-                state = UNACTIVE;
+                if (millis() - start < 2000){
+                    lcd.setCursor(0, 0);
+                    lcd.print("UNLOCKED        ");
+                    clearLCD(1);
+                } else {
+                    inputCode = "";
+                    state = UNACTIVE;
+                }
             break;
         case TIMEOUT:
       		timeout();
@@ -120,10 +131,14 @@ void promptStart(int countdown){
 
 void checkPassword(){
     if (inputCode == passcode){
-        lcd.setCursor(0, 0);
-        lcd.print("UNLOCKED        ");
-        clearLCD(1);
+        start = millis();
         state = UNLOCKED;
+
+        Wire.beginTransmission(slaveAddress);
+        Wire.write(true);
+        Wire.endTransmission();
+        // Open door
+        servo.write(90);
     } else {
         inputCode = "";
         lcd.setCursor(0, 0);
@@ -149,4 +164,3 @@ void clearLCD(int row){
     lcd.setCursor(0, row);
     lcd.print("                "); 
 }
-
