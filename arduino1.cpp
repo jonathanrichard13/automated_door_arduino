@@ -49,6 +49,12 @@ void setup()
     lcd.begin(16, 2); 
     servo.attach(10, 500, 2500);
     Wire.begin();
+    Wire.onReceive(receiveEvent);
+}
+
+void receiveEvent(int something)
+{
+	Serial.println(Wire.read());
 }
 
 void loop()
